@@ -15,6 +15,7 @@ Interface João Garcia Farinha
 FCUL
 """
 
+from click import option
 import numpy as np
 from soupsieve import select
 from sympy import true
@@ -536,18 +537,45 @@ def diffus(dstab,nz,a):
     
     a[1:nz-1] = a[1:nz-1] + dstab*(a[0:nz-2] - 2*a[1:nz-1] + a[2:nz]) 
     return a    
+def opperations(xarray,operator,number):
+    number=float(number)
+    if operator=="+":
+        return xarray+number
+    elif operator=="*":
+        return xarray*number
+    elif operator=="/":
+        return xarray/number
+    elif operator=="-":
+        return xarray-number
+    else:
+        msg="operator:\"{}\" not valid pick (+,-,*,/)".format(operator)
+        print(msg)
 
 if __name__ == "__main__":
 
     prog=True
+    f={}
     p={}
+    par={}
+
+    forcing_fname=str
+    prof_fname=str
+    pwp_out=xr.DataArray()
+    prof_dset=xr.DataArray()
+    params={}
     while prog: 
         menu = {}
         menu['1']="Demo run" 
         menu['2']="Demo runs options:"
         menu['3']="Show Parameters"
+        menu['4']="Creat file"
+        menu['5']="Edit file"
+        menu['6']="Load file"
+        menu['7']="Live plot"
+        
         menu['9']="Exit"
         options=menu.keys()
+        print("-"*65)
         #options.sort()
         for entry in options: 
             print(entry, menu[entry])
@@ -556,13 +584,13 @@ if __name__ == "__main__":
         sub=True
         if selection =='1':
             while sub:
-                menu = {1:'beaufort_met.nc',2:'SO_met_30day.nc',9:"go back"}
+                menu = {1:'beaufort_met.nc',2:'SO_met_30day.nc',3:"load specific file",9:"go back"}
                 options=menu.keys()
                 for entry in options: 
                     print(entry, menu[entry])
                 prof_fname = {1:'beaufort_profile.nc',2:'SO_profile1.nc'}
 
-                sub_select=input("Escolha a demo a para correr: ")
+                sub_select=input("Pick demo to run: ")
                 if sub_select =='1':
                     forcing_fname = 'beaufort_met.nc'
                     prof_fname = 'beaufort_profile.nc'
@@ -571,21 +599,27 @@ if __name__ == "__main__":
                     forcing_fname = 'SO_met_30day.nc'
                     prof_fname = 'SO_profile1.nc'
                     
-                    p['rkz']=1e-6
-                    p['dz'] = 2.0 
-                    p['max_depth'] = 500.0 
-                    p['rg'] = 0.25 # to turn off gradient richardson number mixing set to 0. (code runs much faster)
+                    par['rkz']=1e-6
+                    par['dz'] = 2.0 
+                    par['max_depth'] = 500.0 
+                    par['rg'] = 0.25 # to turn off gradient richardson number mixing set to 0. (code runs much faster)
                     # p['winds_ON'] = True
                     # p['emp_ON'] = True
                     # p['heat_ON'] = True
                     # p['drag_ON'] = True
 
-                    forcing, pwp_out = run(met_data=forcing_fname, prof_data=prof_fname, suffix='demo2_nodiff', save_plots=True, diagnostics=False ,param_kwds=p)
+                    forcing, pwp_out = run(met_data=forcing_fname, prof_data=prof_fname, suffix='demo2_nodiff', save_plots=True, diagnostics=False ,param_kwds=par)
+                elif sub_select == '3':
+                    print(os.listdir("input_data"))
+                    
+                    forcing_fname=input("pick forcing nc file: ")
+                    prof_fname=input("pick profile nc file: ")
+                    forcing, pwp_out = run(met_data=forcing_fname, prof_data=prof_fname, suffix='demo2_nodiff', save_plots=True, diagnostics=False ,param_kwds=par)
                 elif(sub_select=='9'):
                     sub=False
-                    print(sub)
+                    #print(sub)
                 else:
-                    print("Unknown input selected")
+                    print( "Unknown input selected")
         elif selection == '2': 
             while sub:
                 menu = {1:"On/off Features",2:'Parameters',9:"go back"}
@@ -612,11 +646,11 @@ if __name__ == "__main__":
                 if drag_ON=="1":
                     drag_ON=True  
                 else:
-                    drag_ON=False  
-                p['winds_ON'] = winds_ON
-                p['emp_ON'] = emp_ON
-                p['heat_ON'] = heat_ON
-                p['drag_ON'] = drag_ON
+                    drag_ON=False 
+                par['winds_ON'] = winds_ON
+                par['emp_ON'] = emp_ON
+                par['heat_ON'] = heat_ON
+                par['drag_ON'] = drag_ON
                 if emp_ON: 
                     emp_flag=''
                 else:
@@ -635,11 +669,117 @@ if __name__ == "__main__":
                     drag_flag='_dragOFF'
                 suffix = 'costum_1e6diff%s%s%s%s' %(winds_flag, emp_flag, heat_flag, drag_flag)           
                 #forcing, pwp_out = run(met_data=forcing_fname, prof_data=prof_fname, suffix=suffix, save_plots=True, param_kwds=p)
-        
+                break
+
         elif selection == '3':
-            print(p) 
+            print(p)
+            print(f)
+
+            
+        elif selection == '4':
+            try:
+                met_dset={}
+                met_dset["time"]=np.arange(1,input("Number of days"),input("Day fraction"))
+                ##met_dset["sw"]=
+                forcing, pwp_out, params=phf.prep_data(met_dset, prof_dset, params)
+            except:
+                print("Not yet developed")
+        elif selection == '5':
+            try:
+                
+                f=xr.open_dataset("input_data/"+str(forcing_fname))
+                p=xr.open_dataset("input_data/"+str(prof_fname))
+
+                #xarray.save_mfdataset
+                
+            except FileNotFoundError:
+                print("Use option 4/6")
+
+            else:
+                eff=input("want to edit forcing[y/n]")
+                if eff=="y":    
+                    options={}
+                    counter=0
+                    condition=0
+                    for i in f:
+                        options[counter]=i
+                        counter+=1
+                    print(options)
+                    while condition != "":
+                        condition=input("Pick parameter to edit(number) nothing will go next step: ")
+                        try:
+                            condition=int(condition)
+                        except:
+                            print("not valid option")
+                        else:
+                            print(f[options[condition]])
+                            opperations(f[options[condition]],input("pick a operator: "),input("pick a number to do operation: "))
+                            print(f[options[condition]])
+                            f[options[condition]]=f[options[condition]]
+                    name=input("pick save name: ")
+                    f.to_netcdf("input_data/"+name+".nc")
+                else:
+                    eff=input("want to edit profile[y/n]")
+                if eff=="y":
+                    options={}
+                    counter=0
+                    condition=0
+                    for i in p:
+                        options[counter]=i
+                        counter+=1
+                    print(options)
+                    while condition != "":
+                        condition=input("Pick parameter to edit(number) nothing will go next step: ")
+                        try:
+                            condition=int(condition)
+                        except:
+                            print("not a valid option")
+                        else:
+                            print(p[options[condition]])
+                            opperations(p[options[condition]],input("pick a operator: "),input("pick a number to do operation: "))
+                            print(p[options[condition]])
+                            p[options[condition]]=p[options[condition]]
+                    name=input("pick save name: ")
+                    p.to_netcdf("input_data/"+name+".nc")
+                else:
+                    print()
+
+                
+        
+        elif selection == '6':
+            #print(os.listdir("input_data"))
+            sub={}
+            counter=0
+            for i in os.listdir("input_data"):
+                counter+=1;#key 
+                sub[counter]=i#value
+            print(sub)
+            print("Use numbers to pick file or name")
+            ff_p=input("pick forcing nc file: ")
+            pf_p=input("pick profile nc file: ")
+            try:
+                ff_p=int(ff_p)
+                forcing_fname=sub[ff_p]
+            except:
+                forcing_fname=ff_p
+                
+            try:
+                pf_p=int(pf_p)
+                prof_fname=sub[pf_p]
+            except:
+                prof_fname=pf_p
+  
+                
+            print(forcing_fname)
+        elif selection == '7':
+            try:
+                phf.livePlots(pwp_out,n=1)
+            except:
+                        print("Please configure option 1/4 first")
+
         elif selection == '9': 
             prog=False
+            #os.system('cmd /k "exit"')
         else: 
             print("Unknown Option Selected!" )
     
