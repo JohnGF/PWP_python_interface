@@ -1,67 +1,126 @@
-#run( param_kwds{})
-import PWP as pwp
-import PWP_helper as pwph
+
+import netCDF4 as nc
 import numpy as np
-import seawater as sw
-def user_params(dt=3,advance=False,earth=True ):
-    advance=input("Modo advance [y/n]")
-    params = {}
-    lat=input("Latitude")
-    params['dt'] = 3600.0*dt
-    params['dt_d'] = params['dt']/86400.
+import xarray as xr
+from datetime import datetime
+fn = r'input_data/test.nc'
+"""
+ds = nc.Dataset(fn, 'w', format='NETCDF4')
+time = ds.createDimension('time', None)
+dtime = ds.createDimension('dtime', None) #data of days
+sw = ds.createDimension('sw', None) #data of days
+lw = ds.createDimension('lw', None) #data of days
+qlat = ds.createDimension('qlat', None) #data of days
+qsens = ds.createDimension('qsens', None) #data of days
+tx = ds.createDimension('tx', None) #data of days
+ty = ds.createDimension('ty', None) #data of days
+precip = ds.createDimension('precip', None) #data of days
 
-    params['lat'] = lat
-    params['f'] = sw.f(lat)
-    
-    params['max_depth'] = input("profundiade maxima") #profundidade maxima
-    if (earth==False):
-        params['g'] = input("Aceleração gravitica")
-        
-    if (advance==1 or advance=="y"):
-        params['rkz'] = input("Background vertical diffusion (m**2/s). [0.]")
-        params['rb'] = input("Critical Gradient Richardson number [0.25]")
-        params['rg'] = input("Critical Bulk Richardson number [0.65]")
-        params['cpw'] = input("Calor especifico liquido (água)[4183.3 J/kgC]")
-        #params['ucon'] = (0.1*np.abs(params['f']))
-        params['mld_thresh'] = input("Density criterion for MLD (kg/m3). [1e-4]")
-        params['dz'] = input("Delta Profundidade")
-        params['dt_save'] = input("Passo de tempo")
-        params['winds_ON'] = input("Wind effect [True|False]")
-        params['emp_ON'] = input("Freshwater effect [True|False]")
-        params['heat_ON'] = input("Heat effect [True|False]")
-        params['drag_ON'] = input("Drag effect [True|False]")
-        params['beta1'] = input("coeficiente de extinção ondas longas valor [valor tipico 0.6]") #longwave extinction coefficient (meters). [0.6]
-        params['beta2'] = input("coeficiente de extinção ondas curtas valor [valor tipico 20]")  #shortwave extinction coefficient (meters). [20]
-    else:
-        dt=3.; dz=1.; max_depth=100.; mld_thresh=1e-4; dt_save=1.; rb=0.65; 
-        rg=0.25; rkz=0.; beta1=0.6; beta2=20.0; heat_ON=True; winds_ON=True;
-        emp_ON=True; drag_ON=True
-        params['dt'] = 3600.0*dt
-        params['dt_d'] = params['dt']/86400.
-        params['dz'] = dz
-        params['dt_save'] = dt_save
-        params['lat'] = lat
-        params['rb'] = rb
-        params['rg'] = rg
-        params['rkz'] = rkz
-        params['beta1'] = beta1
-        params['beta2'] = beta2
-        params['max_depth'] = max_depth
+#lat = ds.createDimension('lat', 1)
+#lon = ds.createDimension('lon', 1)
 
-        params['g'] = 9.81
-        params['f'] = sw.f(lat)
-        params['cpw'] = 4183.3
-        params['ucon'] = (0.1*np.abs(params['f']))
-        params['mld_thresh'] = mld_thresh
+times = ds.createVariable('time', 'f4', ('time',))
+sw = ds.createVariable('sw', 'f4', ('sw',))
+lw = ds.createVariable('lw', 'f4', ('lw',))
+qlat = ds.createVariable('qlat', 'f4', ('qlat',))
+qsens = ds.createVariable('qsens', 'f4', ('qsens',))
+tx = ds.createVariable('tx', 'f4', ('tx',))
+ty = ds.createVariable('ty', 'f4', ('ty',))
+precip = ds.createVariable('precip', 'f4', ('precip',))
 
-        params['winds_ON'] = winds_ON
-        params['emp_ON'] = emp_ON
-        params['heat_ON'] = heat_ON
-        params['drag_ON'] = drag_ON
-            
+value = ds.createVariable('value', 'f4', ('time', 'sw', 'lw',"qlat","qsens","tx","ty","precip"))
+value.units = 'Unknown'
+#lons = ds.createVariable('lon', 'f4', ('lon',))
+#value = ds.createVariable('value', 'f4', ('time', 'lat', 'lon',))
+#lats[:] = np.arange(40.0, 50.0, 1.0)
+#lons[:] = np.arange(-110.0, -100.0, 1.0)
+times[:] = np.arange(1,31.125,0.125)
+#15 + 8 * np.random.randn(2, 2, 3)
+sw[:]=np.zeros(np.shape(time))
+lw[:]=np.zeros(np.shape(time))
+qlat[:]=np.zeros(np.shape(time))
+qsens[:]=np.zeros(np.shape(time))
+tx[:]=np.zeros(np.shape(time))
+ty[:]=np.zeros(np.shape(time))
+precip[:]=np.zeros(np.shape(time))
+sw[:]=np.zeros(np.shape(time))
 
-forcing_fname = 'beaufort_met.nc'
-prof_fname = 'beaufort_profile.nc'
-print("Running Test Case 1 with data from Beaufort gyre...")
-#forcing, pwp_out = pwp.run(met_data=forcing_fname, prof_data=prof_fname, suffix='demo1_nodiff',param_kwds=user_params(dt=3,advance=False,earth=True ), save_plots=True, diagnostics=False)
-pwph.set_params(lat, dt=3., dz=1., max_depth=100., mld_thresh=1e-4, dt_save=1., rb=0.65, rg=0.25, rkz=0., beta1=0.6, beta2=20.0, heat_ON=True, winds_ON=True, emp_ON=True, drag_ON=True)
+ds.close()
+dsc = nc.Dataset(fn, 'r', format='NETCDF4')
+"""
+time_v=np.arange(1,31.125,0.125)
+qlat_v=np.zeros(np.shape(time_v))
+qsens_v=np.zeros(np.shape(time_v))
+lw_v=np.zeros(np.shape(time_v))
+sw_v=np.zeros(np.shape(time_v))
+tx_v=np.zeros(np.shape(time_v))
+ty_v=np.zeros(np.shape(time_v))
+precip_v=np.zeros(np.shape(time_v))
+
+data_vars = {'qlat':(['time'], qlat_v, 
+                {'units': 'W/m^2', 
+                'long_name':'latent heat flux'}),
+
+            'qsens':(["time"],qsens_v,
+                 {'units': 'W/m^2', 
+                'long_name':'Sensible heat flux'}),
+
+            'lw':(["time"],lw_v,
+                 {'units': 'W/m^2', 
+                'long_name':'Long wave'}),
+            'sw':(["time"],sw_v,
+                 {'units': 'W/m^2', 
+                'long_name':'Short wave'}),
+            'tx':(["time"],tx_v,
+                 {'units': 'N/m^2', 
+                'long_name':'Short wave'}),
+            'ty':(["time"],ty_v,
+                 {'units': 'N/m^2', 
+                'long_name':'Short wave'}),
+            'precip':(["time"],precip_v,
+                 {'units': 'm/s', 
+                'long_name':'Percipitation'}),
+                
+                          
+                          }
+coords = {'time': (['time'],time_v ),'dtime':(['dtime'],[0])}  
+attrs = {'creation_date':str(datetime.now()), 
+         'author':'Student FCUL', 
+         'email':'address@email.com'}  
+df = xr.Dataset(data_vars, coords, attrs)
+df.to_netcdf("input_data/myncforcing_test.nc")
+#print(df)
+#####################
+#Profile
+
+z_v=np.arange(0,1600,200)
+lat_v=-53.513
+qsens_v=np.zeros(np.shape(z_v))
+s_v=np.zeros(np.shape(z_v))
+t_v=np.zeros(np.shape(z_v))
+oxy_v=np.zeros(np.shape(z_v))
+
+data_vars = {'lat':([], lat_v, 
+                {'units': 'W/m^2', 
+                'long_name':'latent heat flux'}),
+
+            's':(["z"],s_v,
+                 {'units': 'W/m^2', 
+                'long_name':'Sensible heat flux'}),
+
+            't':(["z"],t_v,
+                 {'units': 'W/m^2', 
+                'long_name':'Long wave'}),
+            'oxy':(["z"],oxy_v,
+                 {'units': 'W/m^2', 
+                'long_name':'O2'}),
+                
+                          
+                          }
+coords = {'z': (['z'],z_v )}  
+attrs = {'creation_date':str(datetime.now()), 
+         'author':'Student FCUL', 
+         'email':'address@email.com'}  
+dp = xr.Dataset(data_vars, coords, attrs)
+dp.to_netcdf("input_data/myncprofile_test.nc")
+#print(dp)

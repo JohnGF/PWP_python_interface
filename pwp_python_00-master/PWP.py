@@ -249,13 +249,16 @@ def pwpgo(forcing, params, pwp_out, diagnostics):
     
         ### compute new density ###
         dens = sw.dens0(sal, temp)
-    
+
         ### relieve static instability ###
         temp, sal, dens, uvel, vvel = remove_si(temp, sal, dens, uvel, vvel)
     
         ### Compute MLD ###       
         #find ml index
         ml_thresh = params['mld_thresh']
+        #print(np.shape(np.flatnonzero(dens-dens[0]>ml_thresh)))
+        #print(dens-dens[0])
+        #print(ml_thresh)
         mld_idx = np.flatnonzero(dens-dens[0]>ml_thresh)[0] #finds the first index that exceed ML threshold
     
         #check to ensure that ML is defined
