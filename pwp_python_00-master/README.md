@@ -1,8 +1,22 @@
 ## Guide
 
-Open *creat_nc.py* to edit and creat forcing and profile nc files.
+Open **creat_nc.py** to edit and creat forcing and profile nc files.
 
-Open *run_me.py* to run forcing and profiles nc files that are store in *input_data*
+Important functions:
+
++ save to edit a already existing nc file
++ creat to make new nc files
+
+
+Open **run_me.py** to run forcing and profiles nc files that are store in **input_data**
+
+Change example variable to desired mode
+
++ 0 run edited files
++ 1 creat demo_1
++ 2 creat demo_2
++ 3 run created files
++ Can *run run_me(forcing_file,profile_file)* path of files should be in **input_data** directory
 
 
 ## Required modules/libraries
