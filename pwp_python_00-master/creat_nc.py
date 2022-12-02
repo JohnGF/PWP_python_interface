@@ -49,11 +49,11 @@ def save(f,p):
     
     #f["time"]=np.arange(1,31.125,0.125)
     #Short-wave input expected higher values at midday
-    #f["sw"]=np.zeros(np.shape(f["time"]))+100
+    #f["sw"]=f["sw"]+100
     #Long-wave input expected higher values at midday
-    #f["lw"]=np.zeros(np.shape(f["time"]))
-    #f["qlat"]=np.zeros(np.shape(f["time"]))
-    #f["qsens"]=np.zeros(np.shape(f["time"]))
+    #f["lw"]=f["lw"]
+    #f["qlat"]=["qlat"]
+    #f["qsens"]=["qsens"]
     #f["tx"]=np.zeros(np.shape(f["time"]))
     #f["ty"]=np.zeros(np.shape(f["time"]))
     #f["precip"]=np.zeros(np.shape(f["time"]))
@@ -71,94 +71,17 @@ def save(f,p):
     f.to_netcdf("input_data/myncforcing.nc")
     p.to_netcdf("input_data/myncprofile.nc")
     return f,p
-def creat_future_2():
-    #example
-    #ncf_new=ncf.Dataset()
-    np.random.seed(0)
-
-    time = np.arange(1,31.125,0.125)
-    #15 + 8 * np.random.randn(2, 2, 3)
-    sw=np.zeros(np.shape(time))+100
-    lw=np.zeros(np.shape(time))
-    qlat=np.zeros(np.shape(time))
-    qsens=np.zeros(np.shape(time))
-    tx=np.zeros(np.shape(time))
-    ty=np.zeros(np.shape(time))
-    precip=np.zeros(np.shape(time))
-
-    lon = [[-99.83, -99.32], [-99.79, -99.23]]
-
-    lat = [[42.25, 42.21], [42.63, 42.59]]
-
-    #time = pd.date_range("2014-09-06", periods=3)
-
-
-    da = xr.DataArray(
-        data=[sw,lw,qlat,qsens],
-
-        dims=["x", "y", "time"],
-
-        coords=dict(
-
-        time=time,
-        )
-
-    ,
-
-    attrs=dict(
-
-        description="Ambient temperature.",
-
-        units="degC",
-    ),
-    )
-    
-    return da
-def creat_future_1():
-
-    fn = r'input_data/test.nc'
-    ds = nc.Dataset(fn, 'w', format='NETCDF4')
-    time = ds.createDimension('time', None)
-    dtime = ds.createDimension('dtime', None) #data of days
-
-    #lat = ds.createDimension('lat', 1)
-    #lon = ds.createDimension('lon', 1)
-
-    times = ds.createVariable('time', 'f4', ('time',))
-    sw = ds.createVariable('sw', 'f4', ('sw',))
-    lw = ds.createVariable('lw', 'f4', ('lw',))
-    qlat = ds.createVariable('qlat', 'f4', ('qlat',))
-    qsens = ds.createVariable('qsens', 'f4', ('qsens',))
-    tx = ds.createVariable('tx', 'f4', ('tx',))
-    ty = ds.createVariable('ty', 'f4', ('ty',))
-    precip = ds.createVariable('precip', 'f4', ('precip',))
-    #lons = ds.createVariable('lon', 'f4', ('lon',))
-    #value = ds.createVariable('value', 'f4', ('time', 'lat', 'lon',))
-    #lats[:] = np.arange(40.0, 50.0, 1.0)
-    #lons[:] = np.arange(-110.0, -100.0, 1.0)
-    times[:] = np.arange(1,31.125,0.125)
-    #15 + 8 * np.random.randn(2, 2, 3)
-    sw[:]=np.zeros(np.shape(time))
-    lw[:]=np.zeros(np.shape(time))
-    qlat[:]=np.zeros(np.shape(time))
-    qsens[:]=np.zeros(np.shape(time))
-    tx[:]=np.zeros(np.shape(time))
-    ty[:]=np.zeros(np.shape(time))
-    precip[:]=np.zeros(np.shape(time))
-    sw[:]=np.zeros(np.shape(time))
- 
-    ds.close()
-    return ds
-def creat():
-    time_v=np.arange(1,31.125,0.125)
-    qlat_v=np.zeros(np.shape(time_v))
-    qsens_v=np.zeros(np.shape(time_v))
-    lw_v=np.zeros(np.shape(time_v))
-    sw_v=np.zeros(np.shape(time_v))+100
-    tx_v=np.zeros(np.shape(time_v))
-    ty_v=np.zeros(np.shape(time_v))
-    precip_v=np.zeros(np.shape(time_v))
-
+def copy_nc(fc,pc):
+    # You can chagne this values variables are instaciating with 0 filling parameters
+    time_v=fc["time"].values
+    qlat_v=fc["qlat"].values
+    qsens_v=fc["qsens"].values
+    lw_v=fc["lw"].values
+    sw_v=fc["sw"].values
+    tx_v=fc["tx"].values*0
+    ty_v=fc["ty"].values*0
+    precip_v=fc["precip"].values+np.average(fc["precip"].values)*0.05#aumento 5%
+    #
     data_vars = {'qlat':(['time'], qlat_v, 
                     {'units': 'W/m^2', 
                     'long_name':'latent heat flux'}),
@@ -175,10 +98,10 @@ def creat():
                     'long_name':'Short wave'}),
                 'tx':(["time"],tx_v,
                     {'units': 'N/m^2', 
-                    'long_name':'Short wave'}),
+                    'long_name':'Wind stress x'}),
                 'ty':(["time"],ty_v,
                     {'units': 'N/m^2', 
-                    'long_name':'Short wave'}),
+                    'long_name':'Wind stress y'}),
                 'precip':(["time"],precip_v,
                     {'units': 'm/s', 
                     'long_name':'Percipitation'}),
@@ -194,25 +117,29 @@ def creat():
     #print(df)
     #####################
     #Profile
-
-    z_v=np.arange(0,1600,200)
+    # You can chagne this values variables are instaciating with 0 filling parameters
+    z_v=pc["z"].values
     lat_v=-53.513
-    qsens_v=np.zeros(np.shape(z_v))
-    s_v=np.zeros(np.shape(z_v))+20
-    t_v=np.zeros(np.shape(z_v))+25
+    s_v=pc["s"].values
+    t_v=pc["t"].values
+    d_v=pc["d"].values
     oxy_v=np.zeros(np.shape(z_v))
+    #
 
     data_vars = {'lat':([], lat_v, 
                     {'units': 'W/m^2', 
-                    'long_name':'latent heat flux'}),
+                    'long_name':'latitude'}),
 
                 's':(["z"],s_v,
                     {'units': 'W/m^2', 
-                    'long_name':'Sensible heat flux'}),
+                    'long_name':'Salinity'}),
 
                 't':(["z"],t_v,
                     {'units': 'W/m^2', 
-                    'long_name':'Long wave'}),
+                    'long_name':'Temperature'}),
+                'd':(["z"],d_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Density'}),
                 'oxy':(["z"],oxy_v,
                     {'units': 'W/m^2', 
                     'long_name':'O2'}),
@@ -222,15 +149,116 @@ def creat():
     coords = {'z': (['z'],z_v )}  
     attrs = {'creation_date':str(datetime.now()), 
             'author':'Student FCUL', 
-            'email':'address@email.com'}  
+            'email':'address@email.com'} #you can put your email here to brand your nc file
     dp = xr.Dataset(data_vars, coords, attrs)
-    df.to_netcdf("input_data/myncforcing_test.nc")
-    dp.to_netcdf("input_data/myncprofile_test.nc")
-
+    #you can change this names to create new files or you can rename in file explorer as to not overwrite
+    
+    df.to_netcdf("input_data/copy_test.nc")
+    dp.to_netcdf("input_data/copy_prof_test.nc")
+    #If you change it dont forget to change name in the run_me.py file to your new name file
 
     return df,dp
+def creat():
+    #check average of variables of real data
+    # You can chagne this values variables are instaciating with 0 filling parameters
+    time_v=np.arange(1,3.125,0.125)
+    qlat_v=np.zeros(np.shape(time_v))
+    qsens_v=np.zeros(np.shape(time_v))
+    lw_v=np.zeros(np.shape(time_v))
+    sw_v=np.zeros(np.shape(time_v))+100#this one is filled with the value 100
+    #qlat_v=[100*(np.sin(2*x*np.pi)) for x in time_v]
+    #qsens_v=[40*(np.sin(2*x*np.pi+np.pi)) for x in time_v]
+    #lw_v=[-100*abs(np.sin(x*np.pi)) for x in time_v]
+    #sw_v=[400*abs(np.sin(x*np.pi)) for x in time_v]
+    
+    tx_v=np.zeros(np.shape(time_v))+0.01
+    ty_v=np.zeros(np.shape(time_v))+0.05
+    precip_v=np.zeros(np.shape(time_v))+1.2e-06
+    #
+    data_vars = {'qlat':(['time'], qlat_v, 
+                    {'units': 'W/m^2', 
+                    'long_name':'latent heat flux'}),
+
+                'qsens':(["time"],qsens_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Sensible heat flux'}),
+
+                'lw':(["time"],lw_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Long wave'}),
+                'sw':(["time"],sw_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Short wave'}),
+                'tx':(["time"],tx_v,
+                    {'units': 'N/m^2', 
+                    'long_name':'Wind stress x'}),
+                'ty':(["time"],ty_v,
+                    {'units': 'N/m^2', 
+                    'long_name':'Wind stress y'}),
+                'precip':(["time"],precip_v,
+                    {'units': 'm/s', 
+                    'long_name':'Percipitation'}),
+                    
+                            
+                            }
+    coords = {'time': (['time'],time_v ),'dtime':(['dtime'],[0])}  
+    attrs = {'creation_date':str(datetime.now()), 
+            'author':'Student FCUL', 
+            'email':'address@email.com'}  
+    df = xr.Dataset(data_vars, coords, attrs)
+
+    #print(df)
+    #####################
+    #Profile
+    # You can chagne this values variables are instaciating with 0 filling parameters
+    z_v=np.arange(0,1600,200)
+    lat_v=-53.513
+    qsens_v=np.zeros(np.shape(z_v))
+    s_v=np.zeros(np.shape(z_v))+20 
+    t_v=np.zeros(np.shape(z_v))+25
+    d_v=np.zeros(np.shape(z_v))+25
+
+    oxy_v=np.zeros(np.shape(z_v))
+    #
+
+    data_vars = {'lat':([], lat_v, 
+                    {'units': 'W/m^2', 
+                    'long_name':'latitude'}),
+
+                's':(["z"],s_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Salinity'}),
+
+                't':(["z"],t_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Temperature'}),
+                'd':(["z"],d_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'Density'}),
+                'oxy':(["z"],oxy_v,
+                    {'units': 'W/m^2', 
+                    'long_name':'O2'}),
+                    
+                            
+                            }
+    coords = {'z': (['z'],z_v )}  
+    attrs = {'creation_date':str(datetime.now()), 
+            'author':'Student FCUL', 
+            'email':'address@email.com'} #you can put your email here to brand your nc file
+    dp = xr.Dataset(data_vars, coords, attrs)
+    #you can change this names to create new files or you can rename in file explorer as to not overwrite
+    
+    df.to_netcdf("input_data/myncforcing_test.nc")
+    dp.to_netcdf("input_data/myncprofile_test.nc")
+    #If you change it dont forget to change name in the run_me.py file to your new name file
+
+    return df,dp
+
 def graph(f,p):
-    "Plots parameters of file to better understand the expected inputs"
+    """
+    Plots parameters of file
+    Can be used to better understand the expected inputs if used on pre-made files
+    """
     for i in f:
         f[i].plot()
         plt.title(i)
@@ -245,7 +273,7 @@ def graph(f,p):
             p[i].plot(y="z")
             plt.plot
             plt.title(i)
-            plt.gca().invert_yaxis()
+            plt.gca().invert_yaxis()#inver axis has to start zero on top
             plt.show()
             plt.close()
 
@@ -256,8 +284,10 @@ def graph(f,p):
             plt.show()
             plt.close()
 #files can be found PL1-20220930\pwp_python_00-master\input_data
-forc=xr.open_dataset("input_data/"+"SO_met_100day.nc")
-prof=xr.open_dataset("input_data/"+"SO_profile1.nc")
-#f,p=save(forc,prof)
+#change names to files to edit
+forc=xr.open_dataset("input_data/"+"beaufort_met.nc")
+prof=xr.open_dataset("input_data/"+"beaufort_profile.nc")
+#fc,pc=save(forc,prof)
+#f,p=copy_nc(forc,prof)
 f,p=creat()
-#graph(f,p)
+graph(f,p)
